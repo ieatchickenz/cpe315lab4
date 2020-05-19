@@ -5,6 +5,7 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.Queue;
 import java.lang.String;
 import java.util.stream.Collectors;
 import java.io.File;
@@ -33,6 +34,8 @@ public class lab4 {
         dataMem = new int[8192];
         Arrays.fill(dataMem, 0);
         
+        ArrayList<String> queue = new ArrayList<String>(2000);
+
         pc = 0;
         
         //This is an array of instructions, index is pc
@@ -238,6 +241,108 @@ public class lab4 {
                }
                program.add(temp);
             }
+
+        String takenString = "Taken";
+        String squashString = "squash";
+        String stallString = "stall";
+        while(pc < program.size()) {
+            queue.add(program.get(pc).name);
+            temp = program.get(pc);
+            switch (program.get(pc).name) {
+                case "beq":
+                    if(temp.registerS == temp.registerT)
+                    {
+                        //taken
+                        queue.add(program.get(pc + 1).name);
+                        queue.add(program.get(pc + 2).name);
+                        queue.add(takenString);
+                    }
+                    break;
+
+                case "bne":
+                    if(temp.registerS != temp.registerT)
+                    {
+                        //taken
+                        queue.add(program.get(pc + 1).name);
+                        queue.add(program.get(pc + 2).name);
+                        queue.add(takenString);
+                    }
+                    break;
+
+
+                case "lw":
+                    if((program.get(pc + 1).registerT == temp.registerT) ||
+                        (program.get(pc + 1).registerT == temp.registerS))
+                    {
+                        queue.add(stallString);
+                    }
+                    break;
+
+
+                case "j":
+                    queue.add(squashString);
+                    break;
+
+
+                case "jal":
+                    queue.add(squashString);
+                    break;
+
+
+                case "jr":
+                    queue.add(squashString);
+                    break;
+
+                    
+                default:
+                    break;
+            }
+            step(program.get(pc));
+            pc += 1;
+            //if lw, beq, bne, j, jal, jr:
+            //for beq or bne:
+            //if taken: put in next 2
+            //lw lw beq/bne add
+            //printarr[0] = squash
+            //printarr[1] = squash
+            //insert squash at [0]
+            //remove top index
+            //squash squash squash beq/bne
+
+            //for stall string:
+            //add queue.get(i + 1) to print
+            //that stays
+            //stall remains
+
+            //lw with dependency in next instr is a stall
+            //cycles up by 2
+            //instruction count: +1 per instruction emulated
+            //cycle count: +c per instruction emulated, c depending on stall/squash
+            //CPI = cc/ic
+
+            //repeated steps or run
+            //per instruction step:
+            //add instr name to queue
+            /*
+            beq (taken)
+            lw
+            lw
+            taken
+            add
+            addi
+
+            beq (not taken)
+            lw
+            lw
+            add
+            addi
+            */
+        }
+        for(int i = 0; i < program.size(); i++)
+        {
+            System.out.println(queue.get(i));
+        }
+        //clear everything
 
 
         //first loop is for labels:
@@ -448,6 +553,7 @@ public class lab4 {
             System.out.println("Argument mismatch");
             System.out.println("Usage: lab3 input.asm [script]");
         }
+        
     }
 
     public static void help(){
