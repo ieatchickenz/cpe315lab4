@@ -25,6 +25,8 @@ public class lab4 {
         //and, or, add, addi, sll, sub, slt, beq, bne, lw, sw, j, jr, and jal
 	
 	    //Need to make MIPS register (int array), data memory(int array 8192), PC
+        int ic = 0;
+        int cc = 0;
         regList = new int[32];
         Arrays.fill(regList, 0);
 
@@ -244,7 +246,7 @@ public class lab4 {
         String takenString = "taken";
         String squashString = "squash";
         String stallString = "stall";
-        pclist.add(pc);
+        //pclist.add(pc);
         while(pc < program.size()) {
             queue.add(program.get(pc).name);
             temp = program.get(pc);
@@ -252,12 +254,11 @@ public class lab4 {
             //emulator pc with switch immediately -> need to display
             //after the proper stage
             //in-between: "branch-<address>"
-            step(program.get(pc));
-            pc += 1;
+            //branch and jump issues
             pclist.add(pc);
             switch (temp.name) {
                 case "beq":
-                    if(temp.registerS == temp.registerT)
+                    if(regList[temp.registerS] == regList[temp.registerT])
                     {
                         //taken
                         queue.add(program.get(pc).name);
@@ -266,11 +267,13 @@ public class lab4 {
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
                         pclist.add(pc + 3);
+                        cc += 3;
                     }
+                    cc += 1;
                     break;
 
                 case "bne":
-                    if(temp.registerS != temp.registerT)
+                    if(regList[temp.registerS] != regList[temp.registerT])
                     {
                         //taken
                         queue.add(program.get(pc).name);
@@ -279,7 +282,9 @@ public class lab4 {
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
                         pclist.add(pc + 3);
+                        cc += 3;
                     }
+                    cc += 1;
                     break;
 
 
@@ -289,81 +294,67 @@ public class lab4 {
                     {
                         queue.add(stallString);
                         pclist.add(pc + 1);
+                        cc += 2;
+                    }
+                    else
+                    {
+                        cc += 1;
                     }
                     break;
 
 
                 case "j":
                     queue.add(squashString);
-                    pclist.add(pc + 1);
+                    pclist.add(pc);
+                    cc += 2;
+
                     break;
 
 
                 case "jal":
                     queue.add(squashString);
                     pclist.add(pc + 1);
+                    cc += 2;
+
                     break;
 
 
                 case "jr":
                     queue.add(squashString);
                     pclist.add(pc + 1);
+                    cc += 2;
                     break;
 
                     
                 default:
+                    cc += 1;
                     break;
             }
-            
-            //if lw, beq, bne, j, jal, jr:
-            //for beq or bne:
-            //if taken: put in next 2
-            //lw lw beq/bne add
-            //printarr[0] = squash
-            //printarr[1] = squash
-            //insert squash at [0]
-            //remove top index
-            //squash squash squash beq/bne
-
-            //for stall string:
-            //add queue.get(i + 1) to print
-            //that stays
-            //stall remains
-
-            //lw with dependency in next instr is a stall
-            //cycles up by 2
+            step(program.get(pc));
+            pc += 1;
             //instruction count: +1 per instruction emulated
             //cycle count: +c per instruction emulated, c depending on stall/squash
             //CPI = cc/ic
-
-            //repeated steps or run
-            //per instruction step:
-            //add instr name to queue
-            /*
-            beq (taken)
-            lw
-            lw
-            taken
-            add
-            addi
-
-            beq (not taken)
-            lw
-            lw
-            add
-            addi
-            */
+            ic += 1;
         }
         for(int i = 0; i < 4; i++)
         {
             mylist.add(0, "empty");
         }
-        for(int i = 0; i < program.size(); i++)
+        /*for(int i = 0; i < queue.size(); i++)
         {
-            System.out.println(pclist.get(i));
+            pclist.set(i, pclist.get(i) + 1);
             //System.out.println(queue.get(i));
         }
-        
+        pclist.add(0, 0);*/
+        for(int i = 0; i < queue.size(); i++)
+        {
+            System.out.println(pclist.get(i));
+        }
+        System.out.println(ic);
+        System.out.println(cc);
+        System.out.println(queue.size());
+
         //clear everything
 
         Arrays.fill(regList, 0);
@@ -446,7 +437,6 @@ public class lab4 {
                     			step(program.get(pc));
                         	pc += 1;
                     		}
-                        System.out.println("\t" + tempint + " instruction(s) executed");
                         System.out.println();
 
                         pipelineHandle(queue, pclist);
@@ -459,6 +449,8 @@ public class lab4 {
                             pc += 1;
                         }
                         System.out.println();
+                        System.out.println("Program complete");
+                        System.out.println("CPI = " + ((float) cc)/((float) ic) + "Cycles = " + cc + "Instructions = " + ic);
                         break;
 
                     case "m":
@@ -542,7 +534,6 @@ public class lab4 {
                                     step(program.get(pc));
                                     pc += 1;
                                 }
-                            System.out.println("\t" + tempint + " instruction(s) executed");
                             System.out.println();
 
                             //need to remove from queue here after pipelinePrint
@@ -556,6 +547,9 @@ public class lab4 {
                                 pc += 1;
                             }
                             System.out.println();
+                            System.out.println("Program complete");
+                            System.out.println("CPI = " + ((float) cc)/((float) ic) + "Cycles = " + cc + "Instructions = " + ic);
+
                             break;
     
                         case "m":
@@ -631,6 +625,7 @@ public class lab4 {
                 //insert stall at 1 and advance others
                 mylist.add(1, "stall");
                 mylist.remove(4);
+                queue.remove(0);
                 queue.remove(0);
                 pclist.remove(0);
                 break;
