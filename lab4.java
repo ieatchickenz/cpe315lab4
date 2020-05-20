@@ -5,7 +5,6 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.Queue;
 import java.lang.String;
 import java.util.stream.Collectors;
 import java.io.File;
@@ -17,14 +16,12 @@ public class lab4 {
 	static int[] regList;
 	static int[] dataMem;
 	static int pc;
+    static ArrayList<String> mylist;
+    ArrayList<String> queue;
+    ArrayList<Integer> pclist;
 
     public static void main(String[] args) 
     {
-
-        //REDO: Hashtable<String, Object> from name -> object of instruction
-        //Each instruction has: Name, Format, function code, opcode
-        //empty initially: fill in registers / immediate / address / shamt
-
         //and, or, add, addi, sll, sub, slt, beq, bne, lw, sw, j, jr, and jal
 	
 	    //Need to make MIPS register (int array), data memory(int array 8192), PC
@@ -35,7 +32,9 @@ public class lab4 {
         Arrays.fill(dataMem, 0);
         
         ArrayList<String> queue = new ArrayList<String>(2000);
+        ArrayList<Integer> pclist = new ArrayList<Integer>(2000);
 
+        mylist = new ArrayList<String>(4);
         pc = 0;
         
         //This is an array of instructions, index is pc
@@ -242,20 +241,31 @@ public class lab4 {
                program.add(temp);
             }
 
-        String takenString = "Taken";
+        String takenString = "taken";
         String squashString = "squash";
         String stallString = "stall";
+        pclist.add(pc);
         while(pc < program.size()) {
             queue.add(program.get(pc).name);
             temp = program.get(pc);
-            switch (program.get(pc).name) {
+            //if we encounter a branch or a jump
+            //emulator pc with switch immediately -> need to display
+            //after the proper stage
+            //in-between: "branch-<address>"
+            step(program.get(pc));
+            pc += 1;
+            pclist.add(pc);
+            switch (temp.name) {
                 case "beq":
                     if(temp.registerS == temp.registerT)
                     {
                         //taken
+                        queue.add(program.get(pc).name);
                         queue.add(program.get(pc + 1).name);
-                        queue.add(program.get(pc + 2).name);
                         queue.add(takenString);
+                        pclist.add(pc + 1);
+                        pclist.add(pc + 2);
+                        pclist.add(pc + 3);
                     }
                     break;
 
@@ -263,42 +273,48 @@ public class lab4 {
                     if(temp.registerS != temp.registerT)
                     {
                         //taken
+                        queue.add(program.get(pc).name);
                         queue.add(program.get(pc + 1).name);
-                        queue.add(program.get(pc + 2).name);
                         queue.add(takenString);
+                        pclist.add(pc + 1);
+                        pclist.add(pc + 2);
+                        pclist.add(pc + 3);
                     }
                     break;
 
 
                 case "lw":
-                    if((program.get(pc + 1).registerT == temp.registerT) ||
-                        (program.get(pc + 1).registerT == temp.registerS))
+                    if((temp.registerT == program.get(pc).registerT) ||
+                        (temp.registerT == program.get(pc).registerS))
                     {
                         queue.add(stallString);
+                        pclist.add(pc + 1);
                     }
                     break;
 
 
                 case "j":
                     queue.add(squashString);
+                    pclist.add(pc + 1);
                     break;
 
 
                 case "jal":
                     queue.add(squashString);
+                    pclist.add(pc + 1);
                     break;
 
 
                 case "jr":
                     queue.add(squashString);
+                    pclist.add(pc + 1);
                     break;
 
                     
                 default:
                     break;
             }
-            step(program.get(pc));
-            pc += 1;
+            
             //if lw, beq, bne, j, jal, jr:
             //for beq or bne:
             //if taken: put in next 2
@@ -338,12 +354,21 @@ public class lab4 {
             addi
             */
         }
+        for(int i = 0; i < 4; i++)
+        {
+            mylist.add(0, "empty");
+        }
         for(int i = 0; i < program.size(); i++)
         {
-            System.out.println(queue.get(i));
+            System.out.println(pclist.get(i));
+            //System.out.println(queue.get(i));
         }
+        
         //clear everything
 
+        Arrays.fill(regList, 0);
+        Arrays.fill(dataMem, 0);
+        pc = 0;
 
         //first loop is for labels:
         //auto-discard whitespace (string.trim())
@@ -401,6 +426,10 @@ public class lab4 {
                         System.out.println();
                         break;
 
+                    case "p":
+                        pipelinePrint(mylist, pclist.get(0));
+                        break;
+
                     case "s":
                     		//determine fate of invalid PC address
                     		int tempint = 1;
@@ -419,6 +448,9 @@ public class lab4 {
                     		}
                         System.out.println("\t" + tempint + " instruction(s) executed");
                         System.out.println();
+
+                        pipelineHandle(queue, pclist);
+                        pipelinePrint(mylist, pclist.get(0));
                         break;
 
                     case "r":
@@ -489,6 +521,10 @@ public class lab4 {
                             regDump(regList, pc);
                             System.out.println();
                             break;
+
+                        case "p":
+                            pipelinePrint(mylist, pclist.get(0));
+                            break;
     
                         case "s":
                                 //determine fate of invalid PC address
@@ -508,6 +544,10 @@ public class lab4 {
                                 }
                             System.out.println("\t" + tempint + " instruction(s) executed");
                             System.out.println();
+
+                            //need to remove from queue here after pipelinePrint
+                            pipelineHandle(queue, pclist);    
+                            pipelinePrint(mylist, pclist.get(0));
                             break;
     
                         case "r":
@@ -554,6 +594,55 @@ public class lab4 {
             System.out.println("Usage: lab3 input.asm [script]");
         }
         
+    }
+
+    public static void pipelinePrint(ArrayList<String> mylist, int pc){
+        System.out.println();
+        System.out.print(pc);
+        mylist.forEach(System.out::println);
+    }
+
+    public static void pipelineHandle(ArrayList<String> queue, ArrayList<Integer> pclist){
+        //queue will delete first element after printing
+        //same with pclist
+        //String squashString = "squash";
+
+        //mylist needs to persist between prints
+        //mylist is modified here
+
+        //step modifies the queue
+        switch(queue.get(0)){
+            case "taken":
+                //taken
+                break;
+
+            case "stall":
+                //keep "print array" index 0 the same, 
+                //insert stall at 1 and advance others
+                mylist.add(0, queue.get(1));
+                mylist.remove(4);
+                queue.remove(0);
+                queue.add(0,"stallp2");
+                pclist.remove(0);
+                break;
+
+            case "stallp2":
+                //keep "print array" index 0 the same, 
+                //insert stall at 1 and advance others
+                mylist.add(1, "stall");
+                mylist.remove(4);
+                queue.remove(0);
+                pclist.remove(0);
+                break;
+
+            default:
+                mylist.add(0, queue.get(0));
+                mylist.remove(4);
+                queue.remove(0);
+                pclist.remove(0);
+                break;
+        }
+
     }
 
     public static void help(){
