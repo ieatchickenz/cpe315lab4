@@ -246,7 +246,7 @@ public class lab4 {
         String takenString = "taken";
         String squashString = "squash";
         String stallString = "stall";
-        //pclist.add(pc);
+        pclist.add(pc);
         while(pc < program.size()) {
             queue.add(program.get(pc).name);
             temp = program.get(pc);
@@ -255,7 +255,6 @@ public class lab4 {
             //after the proper stage
             //in-between: "branch-<address>"
             //branch and jump issues
-            pclist.add(pc);
             switch (temp.name) {
                 case "beq":
                     if(regList[temp.registerS] == regList[temp.registerT])
@@ -264,9 +263,11 @@ public class lab4 {
                         queue.add(program.get(pc).name);
                         queue.add(program.get(pc + 1).name);
                         queue.add(takenString);
+                        pclist.add(pc);
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
                         pclist.add(pc + 3);
+                        pclist.add(pc + 4);
                         cc += 3;
                     }
                     cc += 1;
@@ -282,6 +283,7 @@ public class lab4 {
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
                         pclist.add(pc + 3);
+                        pclist.add(pc + 4);
                         cc += 3;
                     }
                     cc += 1;
@@ -293,7 +295,8 @@ public class lab4 {
                         (temp.registerT == program.get(pc+1).registerS))
                     {
                         queue.add(stallString);
-                        pclist.add(pc+2);
+                        pclist.add(pc + 1);
+                        pclist.add(pc + 2);
                         cc += 2;
                     }
                     else
@@ -305,7 +308,8 @@ public class lab4 {
 
                 case "j":
                     queue.add(squashString);
-                    pclist.add(pc);
+                    pclist.add(pc + 1);
+                    pclist.add(pc + 2);
                     cc += 2;
 
                     break;
@@ -314,6 +318,7 @@ public class lab4 {
                 case "jal":
                     queue.add(squashString);
                     pclist.add(pc + 1);
+                    pclist.add(pc + 2);
                     cc += 2;
 
                     break;
@@ -322,11 +327,13 @@ public class lab4 {
                 case "jr":
                     queue.add(squashString);
                     pclist.add(pc + 1);
+                    pclist.add(pc + 2);
                     cc += 2;
                     break;
 
                     
                 default:
+                    pclist.add(pc + 1);
                     cc += 1;
                     break;
             }
@@ -343,15 +350,14 @@ public class lab4 {
         }
         /*for(int i = 0; i < queue.size(); i++)
         {
-            pclist.set(i, pclist.get(i) + 1);
-            //System.out.println(queue.get(i));
+            System.out.println(queue.get(i));
         }
         pclist.add(0, 0);*/
-        for(int i = 0; i < queue.size(); i++)
+        for(int i = 0; i < pclist.size(); i++)
         {
             System.out.println(pclist.get(i));
         }
-        System.out.println(ic);
+        System.out.println("\n\n\n" + ic);
         System.out.println(cc);
         System.out.println(queue.size());
 
