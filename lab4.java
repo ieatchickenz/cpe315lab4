@@ -289,11 +289,11 @@ public class lab4 {
 
 
                 case "lw":
-                    if((temp.registerT == program.get(pc).registerT) ||
-                        (temp.registerT == program.get(pc).registerS))
+                    if((temp.registerT == program.get(pc+1).registerT) ||
+                        (temp.registerT == program.get(pc+1).registerS))
                     {
                         queue.add(stallString);
-                        pclist.add(pc + 1);
+                        pclist.add(pc+2);
                         cc += 2;
                     }
                     else
