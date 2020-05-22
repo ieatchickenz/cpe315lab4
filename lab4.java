@@ -297,31 +297,32 @@ public class lab4 {
 
 
                 case "lw":
-                    if(((temp.registerT == program.get(pc+1).registerT) ||
-                        (temp.registerT == program.get(pc+1).registerS)) && 
-                        (temp.registerT != 0) && 
-                        (temp.registerS != 0) &&
-                        (temp.format != "IS") &&
-                        (temp.format != "I"))
+                    if((temp.registerT == program.get(pc+1).registerS) && 
+                        (temp.registerS != 0))
                     {
+                        //((temp.name != "lw" && temp.name != "addi" && temp.registerT == program.get(pc+1).registerT)
                         //rt as dest: (no stall needed)
                         //addi
                         //lw
-                        //
-                        //if(((program.get(pc+1).name == "lw") || (program.get(pc+1).name == "addi"))
-                        //    && (temp.registerT == program.get(pc+1).registerT))
-                        //{
-                        //    pclist.add(pc + 1);
-                        //    cc += 1;
-                        //    break;
-                        //}
+
+                        queue.add(stallString);
+                        pclist.add(pc + 1);
+                        pclist.add(pc + 2);
+                        cc += 2;
+                    }
+                    else if(program.get(pc+1).name != "lw" && program.get(pc+1).name != "addi")
+                    {
+                        if(temp.registerT == program.get(pc+1).registerT && temp.registerT != 0)
+                        {
                             queue.add(stallString);
                             pclist.add(pc + 1);
                             pclist.add(pc + 2);
-                            //1 lw
-                            //2 add
-                            //2 stall
-                            cc += 2;
+                            cc += 2;  
+                        } 
+                        else {
+                            cc += 1;
+                            pclist.add(pc + 1);
+                        }
                     }
                     else
                     {
