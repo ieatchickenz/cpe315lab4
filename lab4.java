@@ -246,6 +246,7 @@ public class lab4 {
         String takenString = "taken";
         String squashString = "squash";
         String stallString = "stall";
+        Boolean jump = false;
         pclist.add(pc);
         while(pc < program.size()) {
             queue.add(program.get(pc).name);
@@ -259,16 +260,18 @@ public class lab4 {
                 case "beq":
                     if(regList[temp.registerS] == regList[temp.registerT])
                     {
-                        //taken
-                        queue.add(program.get(pc).name);
+                        //taken means turn to squash
                         queue.add(program.get(pc + 1).name);
+                        queue.add(program.get(pc + 2).name);
                         queue.add(takenString);
-                        pclist.add(pc);
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
                         pclist.add(pc + 3);
                         pclist.add(pc + 4);
                         cc += 3;
+                    }
+                    else {
+                        pclist.add(pc + 1);
                     }
                     cc += 1;
                     break;
@@ -277,8 +280,8 @@ public class lab4 {
                     if(regList[temp.registerS] != regList[temp.registerT])
                     {
                         //taken
-                        queue.add(program.get(pc).name);
                         queue.add(program.get(pc + 1).name);
+                        queue.add(program.get(pc + 2).name);
                         queue.add(takenString);
                         pclist.add(pc + 1);
                         pclist.add(pc + 2);
@@ -286,22 +289,44 @@ public class lab4 {
                         pclist.add(pc + 4);
                         cc += 3;
                     }
+                    else {
+                        pclist.add(pc + 1);
+                    }
                     cc += 1;
                     break;
 
 
                 case "lw":
-                    if((temp.registerT == program.get(pc+1).registerT) ||
-                        (temp.registerT == program.get(pc+1).registerS))
+                    if(((temp.registerT == program.get(pc+1).registerT) ||
+                        (temp.registerT == program.get(pc+1).registerS)) && 
+                        (temp.registerT != 0) && 
+                        (temp.registerS != 0) &&
+                        (temp.format != "IS") &&
+                        (temp.format != "I"))
                     {
-                        queue.add(stallString);
-                        pclist.add(pc + 1);
-                        pclist.add(pc + 2);
-                        cc += 2;
+                        //rt as dest: (no stall needed)
+                        //addi
+                        //lw
+                        //
+                        //if(((program.get(pc+1).name == "lw") || (program.get(pc+1).name == "addi"))
+                        //    && (temp.registerT == program.get(pc+1).registerT))
+                        //{
+                        //    pclist.add(pc + 1);
+                        //    cc += 1;
+                        //    break;
+                        //}
+                            queue.add(stallString);
+                            pclist.add(pc + 1);
+                            pclist.add(pc + 2);
+                            //1 lw
+                            //2 add
+                            //2 stall
+                            cc += 2;
                     }
                     else
                     {
                         cc += 1;
+                        pclist.add(pc + 1);
                     }
                     break;
 
@@ -309,8 +334,9 @@ public class lab4 {
                 case "j":
                     queue.add(squashString);
                     pclist.add(pc + 1);
-                    pclist.add(pc + 2);
+                    //pclist.add(pc + 2);
                     cc += 2;
+                    jump = true;
 
                     break;
 
@@ -318,8 +344,10 @@ public class lab4 {
                 case "jal":
                     queue.add(squashString);
                     pclist.add(pc + 1);
-                    pclist.add(pc + 2);
+                    //pclist.add(pc + 2);
                     cc += 2;
+                    jump = true;
+
 
                     break;
 
@@ -327,8 +355,10 @@ public class lab4 {
                 case "jr":
                     queue.add(squashString);
                     pclist.add(pc + 1);
-                    pclist.add(pc + 2);
+                    //pclist.add(pc + 2);
                     cc += 2;
+                    jump = true;
+
                     break;
 
                     
@@ -339,6 +369,10 @@ public class lab4 {
             }
             step(program.get(pc));
             pc += 1;
+            if(jump){
+                pclist.add(pc);
+                jump = false;
+            }
             //instruction count: +1 per instruction emulated
             //cycle count: +c per instruction emulated, c depending on stall/squash
             //CPI = cc/ic
@@ -348,18 +382,21 @@ public class lab4 {
         {
             mylist.add(0, "empty");
         }
-        /*for(int i = 0; i < queue.size(); i++)
+        //account spinup/spindown
+        cc += 4;
+
+        for(int i = 0; i < queue.size(); i++)
         {
             System.out.println(queue.get(i));
         }
-        pclist.add(0, 0);*/
-        for(int i = 0; i < pclist.size(); i++)
+        /*for(int i = 0; i < pclist.size(); i++)
         {
             System.out.println(pclist.get(i));
-        }
+        }*/
         System.out.println("\n\n\n" + ic);
         System.out.println(cc);
         System.out.println(queue.size());
+        cc = queue.size() + 4;
 
         //clear everything
 
@@ -440,8 +477,13 @@ public class lab4 {
                     		}
                     		for(int z = 0; z < tempint && z < program.size(); z++)
                     		{
-                    			step(program.get(pc));
-                        	pc += 1;
+                                if(pc < program.size())
+                                    {
+                                        step(program.get(pc));
+                                        pc += 1;
+                                    }
+                    			//step(program.get(pc));
+                        	   //pc += 1;
                     		}
                         System.out.println();
 
@@ -537,8 +579,13 @@ public class lab4 {
                                 }
                                 for(int z = 0; z < tempint && z < program.size(); z++)
                                 {
-                                    step(program.get(pc));
-                                    pc += 1;
+                                    //when emulation has ended we stop emulating
+                                    //just run the simulator
+                                    if(pc < program.size())
+                                    {
+                                        step(program.get(pc));
+                                        pc += 1;
+                                    }
                                 }
                             System.out.println();
 
@@ -613,7 +660,14 @@ public class lab4 {
         //step modifies the queue
         switch(queue.get(0)){
             case "taken":
-                //taken
+                mylist.remove(0);
+                mylist.remove(0);
+                mylist.remove(1);
+                mylist.add(0, "squash");
+                mylist.add(0, "squash");
+                mylist.add(0, "squash");
+                queue.remove(0);
+                pclist.remove(0);
                 break;
 
             case "stall":
