@@ -384,20 +384,20 @@ public class lab4 {
             mylist.add(0, "empty");
         }
         //account spinup/spindown
-        cc += 4;
+        cc = queue.size() + 4;
 
-        for(int i = 0; i < queue.size(); i++)
-        {
-            System.out.println(queue.get(i));
-        }
+        // for(int i = 0; i < queue.size(); i++)
+        // {
+        //     System.out.println(queue.get(i));
+        // }
         /*for(int i = 0; i < pclist.size(); i++)
         {
             System.out.println(pclist.get(i));
         }*/
-        System.out.println("\n\n\n" + ic);
-        System.out.println(cc);
-        System.out.println(queue.size());
-        cc = queue.size() + 4;
+        // System.out.println("\n\n\n" + ic);
+        // System.out.println(cc);
+        // System.out.println(queue.size());
+        
 
         //clear everything
 
@@ -419,8 +419,6 @@ public class lab4 {
 
         //from objects -> hash various object variables based on format
         //and concatenate to a string
-
-
         }
         catch(IOException ex){
 
@@ -486,10 +484,18 @@ public class lab4 {
                     			//step(program.get(pc));
                         	   //pc += 1;
                     		}
-                        System.out.println();
 
                         pipelineHandle(queue, pclist);
-                        pipelinePrint(mylist, pclist.get(0));
+                        if(queue.size() == 0){
+                            System.out.println();
+                            System.out.println("Program complete");
+                            String cpi = String.format("%.3f", ((float) cc)/((float) ic));
+                            System.out.println("CPI = " + cpi + "\tCycles = " + cc + "\tInstructions = " + ic);
+                            System.out.println(); 
+                        }
+                        else{
+                            pipelinePrint(mylist, pclist.get(0));
+                        }
                         break;
 
                     case "r":
@@ -499,7 +505,9 @@ public class lab4 {
                         }
                         System.out.println();
                         System.out.println("Program complete");
-                        System.out.println("CPI = " + ((float) cc)/((float) ic) + "Cycles = " + cc + "Instructions = " + ic);
+                        String cpi = String.format("%.3f", ((float) cc)/((float) ic));
+                        System.out.println("CPI = " + cpi + "\tCycles = " + cc + "\tInstructions = " + ic);
+                        System.out.println();
                         break;
 
                     case "m":
@@ -592,7 +600,16 @@ public class lab4 {
 
                             //need to remove from queue here after pipelinePrint
                             pipelineHandle(queue, pclist);    
-                            pipelinePrint(mylist, pclist.get(0));
+                            if(queue.size() == 0){
+                                System.out.println();
+                                System.out.println("Program complete");
+                                String cpi = String.format("%.3f", ((float) cc)/((float) ic));
+                                System.out.println("CPI = " + cpi + "\tCycles = " + cc + "\tInstructions = " + ic);
+                                System.out.println(); 
+                            }
+                            else{
+                                pipelinePrint(mylist, pclist.get(0));
+                            }
                             break;
     
                         case "r":
@@ -602,8 +619,9 @@ public class lab4 {
                             }
                             System.out.println();
                             System.out.println("Program complete");
-                            System.out.println("CPI = " + ((float) cc)/((float) ic) + "Cycles = " + cc + "Instructions = " + ic);
-
+                            String cpi = String.format("%.3f", ((float) cc)/((float) ic));
+                            System.out.println("CPI = " + cpi + "\tCycles = " + cc + "\tInstructions = " + ic);
+                            System.out.println(); 
                             break;
     
                         case "m":
@@ -646,8 +664,9 @@ public class lab4 {
 
     public static void pipelinePrint(ArrayList<String> mylist, int pc){
         System.out.println();
-        System.out.print(pc);
-        mylist.forEach(System.out::println);
+        System.out.println("pc\tif/id\tid/exe\texe/mem\tmem/wb");
+        System.out.println(pc + "\t" + mylist.get(0) + "\t" + mylist.get(1) + "\t" + mylist.get(2) + "\t" + mylist.get(3));
+        System.out.println();
     }
 
     public static void pipelineHandle(ArrayList<String> queue, ArrayList<Integer> pclist){
@@ -659,46 +678,50 @@ public class lab4 {
         //mylist is modified here
 
         //step modifies the queue
-        switch(queue.get(0)){
-            case "taken":
-                mylist.remove(0);
-                mylist.remove(0);
-                mylist.remove(1);
-                mylist.add(0, "squash");
-                mylist.add(0, "squash");
-                mylist.add(0, "squash");
-                queue.remove(0);
-                pclist.remove(0);
-                break;
+        if(queue.size()!=0){
+            switch(queue.get(0)){
+                case "taken":
+                    mylist.remove(0);
+                    mylist.remove(0);
+                    mylist.remove(1);
+                    mylist.add(0, "squash");
+                    mylist.add(0, "squash");
+                    mylist.add(0, "squash");
+                    queue.remove(0);
+                    pclist.remove(0);
+                    break;
 
-            case "stall":
-                //keep "print array" index 0 the same, 
-                //insert stall at 1 and advance others
-                mylist.add(0, queue.get(1));
-                mylist.remove(4);
-                queue.remove(0);
-                queue.add(0,"stallp2");
-                pclist.remove(0);
-                break;
+                case "stall":
+                    //keep "print array" index 0 the same, 
+                    //insert stall at 1 and advance others
+                    mylist.add(0, queue.get(1));
+                    mylist.remove(4);
+                    queue.remove(0);
+                    queue.add(0,"stallp2");
+                    pclist.remove(0);
+                    break;
 
-            case "stallp2":
-                //keep "print array" index 0 the same, 
-                //insert stall at 1 and advance others
-                mylist.add(1, "stall");
-                mylist.remove(4);
-                queue.remove(0);
-                queue.remove(0);
-                pclist.remove(0);
-                break;
+                case "stallp2":
+                    //keep "print array" index 0 the same, 
+                    //insert stall at 1 and advance others
+                    mylist.add(1, "stall");
+                    mylist.remove(4);
+                    queue.remove(0);
+                    queue.remove(0);
+                    pclist.remove(0);
+                    break;
 
-            default:
-                mylist.add(0, queue.get(0));
-                mylist.remove(4);
-                queue.remove(0);
-                pclist.remove(0);
-                break;
+                default:
+                    mylist.add(0, queue.get(0));
+                    mylist.remove(4);
+                    queue.remove(0);
+                    pclist.remove(0);
+                    break;
+            }
         }
+        else{
 
+        }
     }
 
     public static void help(){
